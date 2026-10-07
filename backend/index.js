@@ -142,14 +142,130 @@ app.post('/api/fetch-story', async (req, res) => {
 
     const $ = cheerio.load(response.data);
 
-    // Remove noise & unwanted elements
-    $('script, style, iframe, nav, header, footer, .ads, .quang-cao, .author-note, .btn, .comments, #comments').remove();
+    // 1. Extract Next Chapter & Prev Chapter links on original DOM BEFORE noise cleanup
+    let nextChapterUrl = null;
+    let prevChapterUrl = null;
 
-    // Auto extract title
+    $('a').each((_, el) => {
+      const href = $(el).attr('href');
+      if (!href || href.startsWith('javascript:') || href === '#') return;
+
+      const text = $(el).text().toLowerCase().trim();
+      const rel = ($(el).attr('rel') || '').toLowerCase();
+      const id = ($(el).attr('id') || '').toLowerCase();
+      const className = ($(el).attr('class') || '').toLowerCase();
+      const titleAttr = ($(el).attr('title') || '').toLowerCase();
+      const ariaLabel = ($(el).attr('aria-label') || '').toLowerCase();
+
+      let resolvedUrl;
+      try {
+        resolvedUrl = href.startsWith('http') ? href : new URL(href, url).href;
+      } catch (e) {
+        return;
+      }
+
+      // Avoid self-referencing links
+      if (resolvedUrl === url) return;
+
+      // Check NEXT chapter criteria
+      if (!nextChapterUrl) {
+        if (
+          rel === 'next' ||
+          text.includes('chương sau') ||
+          text.includes('chương tiếp') ||
+          text.includes('chương kế') ||
+          text.includes('tập sau') ||
+          text.includes('next chapter') ||
+          text.includes('chap sau') ||
+          text.includes('chap kế') ||
+          text.includes('trang sau') ||
+          text.includes('tiếp theo') ||
+          text === 'chương tiếp' ||
+          text === 'tiếp' ||
+          text === 'next' ||
+          text === '>' ||
+          text === '>>' ||
+          text === '→' ||
+          id.includes('next') ||
+          id === 'next_chap' ||
+          className.includes('next-chap') ||
+          className.includes('chap-next') ||
+          className.includes('btn-next')
+        ) {
+          nextChapterUrl = resolvedUrl;
+        }
+      }
+
+      // Check PREV chapter criteria
+      if (!prevChapterUrl) {
+        if (
+          rel === 'prev' ||
+          text.includes('chương trước') ||
+          text.includes('chương trc') ||
+          text.includes('tập trước') ||
+          text.includes('prev chapter') ||
+          text.includes('previous chapter') ||
+          text.includes('chap trước') ||
+          text.includes('trang trước') ||
+          text === 'chương trước' ||
+          text === 'trước' ||
+          text === 'prev' ||
+          text === '<' ||
+          text === '<<' ||
+          text === '←' ||
+          id.includes('prev') ||
+          id === 'prev_chap' ||
+          className.includes('prev-chap') ||
+          className.includes('chap-prev') ||
+          className.includes('btn-prev')
+        ) {
+          prevChapterUrl = resolvedUrl;
+        }
+      }
+    });
+
+    // Fallback heuristic: If links not found in DOM, attempt numerical regex increment/decrement on URL
+    if (!nextChapterUrl || !prevChapterUrl) {
+      const chapterMatch = url.match(/(chuong|chapter|chap|c)[-_/]?(\d+)/i);
+      if (chapterMatch) {
+        const prefix = chapterMatch[1];
+        const num = parseInt(chapterMatch[2], 10);
+        const matchedStr = chapterMatch[0];
+        if (!nextChapterUrl) {
+          nextChapterUrl = url.replace(matchedStr, matchedStr.replace(chapterMatch[2], (num + 1).toString()));
+        }
+        if (!prevChapterUrl && num > 1) {
+          prevChapterUrl = url.replace(matchedStr, matchedStr.replace(chapterMatch[2], (num - 1).toString()));
+        }
+      } else {
+        const trailingNumMatch = url.match(/(.*\/)(\d+)(\.html|\.htm|\/)?$/i);
+        if (trailingNumMatch) {
+          const basePath = trailingNumMatch[1];
+          const num = parseInt(trailingNumMatch[2], 10);
+          const ext = trailingNumMatch[3] || '';
+          if (!nextChapterUrl) {
+            nextChapterUrl = `${basePath}${num + 1}${ext}`;
+          }
+          if (!prevChapterUrl && num > 1) {
+            prevChapterUrl = `${basePath}${num - 1}${ext}`;
+          }
+        }
+      }
+    }
+
+    // 2. Extract Title before noise removal
     let title = $('h1').first().text().trim() || 
                 $('.chapter-title').first().text().trim() || 
                 $('title').text().trim() || 
                 'Chương truyện từ URL';
+
+    // Clean title noise if any
+    if (title.includes('- TruyenFull')) {
+      title = title.replace('- TruyenFull', '').trim();
+    }
+
+    // 3. Remove noise & unwanted elements for text extraction
+    $('script, style, iframe, nav, header, footer, .ads, .quang-cao, .author-note, .comments, #comments').remove();
 
     let rawStoryText = '';
 
@@ -200,26 +316,12 @@ app.post('/api/fetch-story', async (req, res) => {
 
     const chunks = chunkText(rawStoryText, Number(wordsPerChunk) || 20);
 
-    // Look for potential Next Chapter / Prev Chapter links
-    let nextChapterUrl = null;
-    let prevChapterUrl = null;
-    $('a').each((_, el) => {
-      const text = $(el).text().toLowerCase();
-      const href = $(el).attr('href');
-      if (!href) return;
-      if ((text.includes('chương sau') || text.includes('tiếp') || text.includes('next')) && !nextChapterUrl) {
-        nextChapterUrl = href.startsWith('http') ? href : new URL(href, url).href;
-      }
-      if ((text.includes('chương trước') || text.includes('trước') || text.includes('prev')) && !prevChapterUrl) {
-        prevChapterUrl = href.startsWith('http') ? href : new URL(href, url).href;
-      }
-    });
-
     return res.json({
       success: true,
       title,
       totalChunks: chunks.length,
       chunks,
+      currentUrl: url,
       nextChapterUrl,
       prevChapterUrl
     });

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Star, Folder, CloudCheck, MessageSquare, Video, Share2, ShieldAlert, Eye, Lock } from 'lucide-react';
 
-export default function TopBar({ 
-  docTitle, 
-  setDocTitle, 
-  onOpenSecretModal, 
-  isPanic, 
+export default function TopBar({
+  docTitle,
+  setDocTitle,
+  onOpenSecretModal,
+  isPanic,
   togglePanic,
   activeStoryTitle
 }) {
@@ -33,16 +33,16 @@ export default function TopBar({
             <Star size={16} className="text-gray-400 cursor-pointer hover:text-yellow-500" />
             <Folder size={16} className="text-gray-400 cursor-pointer hover:text-gray-600" />
             <CloudCheck size={16} className="text-gray-400 cursor-pointer" title="Đã lưu vào Drive" />
-            
+
             {/* Panic Mode Status Badge */}
-            <span 
+            <span
               className={`badge-panic ${isPanic ? 'active' : ''}`}
               onClick={togglePanic}
               title="Nhấn phím ESC / SPACE để bật/tắt chế độ hoảng loạn"
               style={{ cursor: 'pointer', marginLeft: '8px' }}
             >
               {isPanic ? <ShieldAlert size={12} /> : <Eye size={12} />}
-              {isPanic ? 'PANIC: ON (Nội dung giả)' : 'BOSS KEY: STANDBY'}
+              {isPanic ? 'RED' : 'SAVE'}
             </span>
           </div>
 
@@ -67,25 +67,25 @@ export default function TopBar({
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {activeStoryTitle && !isPanic && (
           <span style={{ fontSize: '11px', color: '#5f6368', background: '#e8f0fe', padding: '3px 8px', borderRadius: '4px' }}>
-            📖 Đang đọc: {activeStoryTitle}
+
           </span>
         )}
         <MessageSquare size={18} className="text-gray-600 cursor-pointer" title="Lịch sử nhận xét" />
         <Video size={18} className="text-gray-600 cursor-pointer" title="Tham gia cuộc họp" />
-        
+
         <button className="btn-primary" style={{ backgroundColor: '#c2e7ff', color: '#001d35', border: 'none' }}>
           <Lock size={14} /> Chia sẻ
         </button>
 
         {/* Realistic User Avatar */}
-        <div style={{ 
-          width: '32px', 
-          height: '32px', 
-          borderRadius: '50%', 
-          backgroundColor: '#1a73e8', 
-          color: '#fff', 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          backgroundColor: '#1a73e8',
+          color: '#fff',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
           fontWeight: 600,
           fontSize: '13px'

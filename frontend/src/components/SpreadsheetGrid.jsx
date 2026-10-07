@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 
@@ -34,19 +34,52 @@ export default function SpreadsheetGrid({
   const tableContainerRef = useRef(null);
   const activeRowRef = useRef(null);
 
-  // Keyboard navigation handler
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState(null); // { row, col }
+  const [editingValue, setEditingValue] = useState('');
+
+  const getCellValue = (r, colKey) => {
+    if (!r) return '';
+    switch (colKey) {
+      case 'A': return r.colA;
+      case 'B': return r.colB;
+      case 'C': return r.colC;
+      case 'D': return r.colD;
+      case 'E': return r.colE;
+      case 'F': return r.colF;
+      case 'G': return r.colG;
+      case 'H': return r.colH;
+      default: return '';
+    }
+  };
+
+  const startEditing = (row, col, currentVal) => {
+    setEditingCell({ row, col });
+    setEditingValue(currentVal || '');
+  };
+
+  // Keyboard navigation & edit trigger handler
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't intercept if user is typing in a modal or text input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+      // Don't intercept if user is typing inside modal or another input
+      const activeTag = document.activeElement?.tagName;
+      if (['TEXTAREA', 'SELECT'].includes(activeTag) || (activeTag === 'INPUT' && !document.activeElement.classList.contains('cell-inline-input'))) {
         return;
       }
+
+      // If currently editing inside grid, ignore grid navigation keys
+      if (editingCell) return;
 
       const { row, col } = selectedCell;
       const colIndex = COLS.indexOf(col);
       const totalRows = rows.length;
 
       switch (e.key) {
+        case 'Enter':
+        case 'F2':
+          e.preventDefault();
+          startEditing(row, col, getCellValue(rows[row], col));
+          break;
         case 'ArrowDown':
           e.preventDefault();
           if (row < totalRows - 1) {
@@ -60,15 +93,19 @@ export default function SpreadsheetGrid({
           }
           break;
         case 'ArrowRight':
-          e.preventDefault();
-          if (colIndex < COLS.length - 1) {
-            setSelectedCell({ row, col: COLS[colIndex + 1] });
+          if (!e.shiftKey) {
+            e.preventDefault();
+            if (colIndex < COLS.length - 1) {
+              setSelectedCell({ row, col: COLS[colIndex + 1] });
+            }
           }
           break;
         case 'ArrowLeft':
-          e.preventDefault();
-          if (colIndex > 0) {
-            setSelectedCell({ row, col: COLS[colIndex - 1] });
+          if (!e.shiftKey) {
+            e.preventDefault();
+            if (colIndex > 0) {
+              setSelectedCell({ row, col: COLS[colIndex - 1] });
+            }
           }
           break;
         case 'PageDown':
@@ -90,31 +127,17 @@ export default function SpreadsheetGrid({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedCell, rows.length, setSelectedCell]);
+  }, [selectedCell, rows, setSelectedCell, editingCell]);
 
   // Auto-scroll active row into view
   useEffect(() => {
-    if (activeRowRef.current) {
+    if (activeRowRef.current && !editingCell) {
       activeRowRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest'
       });
     }
-  }, [selectedCell.row]);
-
-  const getCellValue = (r, colKey) => {
-    switch (colKey) {
-      case 'A': return r.colA;
-      case 'B': return r.colB;
-      case 'C': return r.colC;
-      case 'D': return r.colD;
-      case 'E': return r.colE;
-      case 'F': return r.colF;
-      case 'G': return r.colG;
-      case 'H': return r.colH;
-      default: return '';
-    }
-  };
+  }, [selectedCell.row, editingCell]);
 
   return (
     <div className="spreadsheet-container" ref={tableContainerRef} tabIndex={0}>
@@ -175,6 +198,7 @@ export default function SpreadsheetGrid({
                 {/* Data Cells */}
                 {COLS.map((colKey) => {
                   const isCellActive = selectedCell.row === rIndex && selectedCell.col === colKey;
+                  const isEditingThisCell = editingCell && editingCell.row === rIndex && editingCell.col === colKey;
                   const cellValue = getCellValue(rowItem, colKey);
                   const isStoryCol = colKey === 'C';
 
@@ -189,17 +213,41 @@ export default function SpreadsheetGrid({
                         ${isPanic ? 'panic' : ''}
                       `}
                       onClick={() => setSelectedCell({ row: rIndex, col: colKey })}
+                      onDoubleClick={() => startEditing(rIndex, colKey, cellValue)}
                       style={{
                         textAlign: colKey === 'F' ? 'right' : 'left',
                         fontWeight: isStoryCol && isRowFocused && !isPanic ? 500 : 400,
                         color: isStoryCol && isRowFocused && !isPanic ? '#0b8043' : undefined
                       }}
-                      title={isStoryCol ? "Nhấn mũi tên ⬇️ ⬆️ để di chuyển đọc từng câu" : undefined}
+                      title={isStoryCol ? "Nhấp kép để sửa nội dung | Dùng ⬇️ ⬆️ để đọc" : "Nhấp kép chuột để sửa giá trị ô này"}
                     >
-                      {cellValue}
-                      
-                      {/* Active cell handle indicator */}
-                      {isCellActive && <div className="active-cell-handle" />}
+                      {isEditingThisCell ? (
+                        <input
+                          autoFocus
+                          className="cell-inline-input"
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              onCellUpdate && onCellUpdate(rIndex, colKey, editingValue);
+                              setEditingCell(null);
+                            } else if (e.key === 'Escape') {
+                              e.preventDefault();
+                              setEditingCell(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            onCellUpdate && onCellUpdate(rIndex, colKey, editingValue);
+                            setEditingCell(null);
+                          }}
+                        />
+                      ) : (
+                        <>
+                          {cellValue}
+                          {isCellActive && <div className="active-cell-handle" />}
+                        </>
+                      )}
                     </td>
                   );
                 })}
@@ -211,3 +259,4 @@ export default function SpreadsheetGrid({
     </div>
   );
 }
+

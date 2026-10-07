@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Globe, FileText, BookOpen, Settings, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, Globe, FileText, BookOpen, Settings, AlertCircle, Loader2, CheckCircle2, Shield, RotateCcw, Edit3 } from 'lucide-react';
+import { PRESET_PANIC_PROFILES, DEFAULT_CORPORATE_FAKES } from '../mockData';
 
 export default function SecretModal({
   isOpen,
   onClose,
   onLoadStory,
   wordsPerChunk,
-  setWordsPerChunk
+  setWordsPerChunk,
+  customPanicLogs,
+  onSavePanicLogs,
+  onResetAllData
 }) {
   const [activeTab, setActiveTab] = useState('url');
   
@@ -21,14 +25,19 @@ export default function SecretModal({
   // Presets states
   const [presets, setPresets] = useState([]);
   
+  // Panic logs edit state
+  const [panicInputText, setPanicInputText] = useState('');
+
   // Status states
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Fetch presets on modal open
+  // Sync panic logs input state when modal opens
   useEffect(() => {
     if (isOpen) {
+      const currentLogs = customPanicLogs && customPanicLogs.length > 0 ? customPanicLogs : DEFAULT_CORPORATE_FAKES;
+      setPanicInputText(currentLogs.join('\n'));
       fetch('http://localhost:5000/api/presets')
         .then(res => res.json())
         .then(data => {
@@ -38,7 +47,7 @@ export default function SecretModal({
         })
         .catch(err => console.log('Presets fetch error:', err));
     }
-  }, [isOpen]);
+  }, [isOpen, customPanicLogs]);
 
   if (!isOpen) return null;
 
@@ -67,7 +76,7 @@ export default function SecretModal({
       const data = await res.json();
       if (data.success) {
         setSuccessMsg(`Đã bóc tách thành công ${data.totalChunks} đoạn truyện!`);
-        onLoadStory(data.title, data.chunks, storyUrl.trim(), data.nextChapterUrl);
+        onLoadStory(data.title, data.chunks, storyUrl.trim(), data.nextChapterUrl, data.prevChapterUrl);
         setTimeout(() => onClose(), 1200);
       } else {
         setErrorMsg(data.message || 'Lỗi bóc tách truyện.');
@@ -135,6 +144,37 @@ export default function SecretModal({
     }
   };
 
+  // Save custom panic logs
+  const handleSavePanicForm = (e) => {
+    e.preventDefault();
+    const lines = panicInputText
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    if (lines.length === 0) {
+      setErrorMsg('Danh sách log ngụy trang không được để trống.');
+      return;
+    }
+
+    if (onSavePanicLogs) {
+      onSavePanicLogs(lines);
+      setSuccessMsg('Đã lưu dữ liệu log ngụy trang cá nhân hóa vào localStorage!');
+    }
+  };
+
+  // Apply quick panic profile template
+  const handleApplyPanicPreset = (profileKey) => {
+    const list = PRESET_PANIC_PROFILES[profileKey];
+    if (list) {
+      setPanicInputText(list.join('\n'));
+      if (onSavePanicLogs) {
+        onSavePanicLogs(list);
+        setSuccessMsg('Đã áp dụng mẫu log ngụy trang thành công!');
+      }
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="secret-modal" onClick={e => e.stopPropagation()}>
@@ -142,7 +182,7 @@ export default function SecretModal({
         <div className="modal-header">
           <div className="modal-title">
             <BookOpen className="text-blue-600" size={20} />
-            Quản lý Truyện Bí Mật (Boss Key Console)
+            Quản lý Truyện Bí Mật & Data Ngụy Trang (Boss Key Console)
           </div>
           <button className="modal-close-btn" onClick={onClose}>
             <X size={18} />
@@ -170,10 +210,16 @@ export default function SecretModal({
             <BookOpen size={14} style={{ display: 'inline', marginRight: '4px' }} /> Truyện Mẫu
           </div>
           <div 
+            className={`modal-tab-item ${activeTab === 'panicData' ? 'active' : ''}`}
+            onClick={() => setActiveTab('panicData')}
+          >
+            <Shield size={14} style={{ display: 'inline', marginRight: '4px' }} /> Log Khẩn Cấp (Panic)
+          </div>
+          <div 
             className={`modal-tab-item ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
-            <Settings size={14} style={{ display: 'inline', marginRight: '4px' }} /> Cài đặt & Phím tắt
+            <Settings size={14} style={{ display: 'inline', marginRight: '4px' }} /> Phím tắt & Cài đặt
           </div>
         </div>
 
@@ -199,7 +245,7 @@ export default function SecretModal({
                 <input
                   type="url"
                   className="form-input"
-                  placeholder="https://truyenfull.io/ten-truyen/chuong-1/"
+                  placeholder="https://truyenfull.live/ten-truyen/chuong-1/"
                   value={storyUrl}
                   onChange={e => setStoryUrl(e.target.value)}
                   required
@@ -298,14 +344,72 @@ export default function SecretModal({
             </div>
           )}
 
-          {/* TAB 4: Settings & Shortcut Guide */}
+          {/* TAB 4: Customize Panic Fake Data */}
+          {activeTab === 'panicData' && (
+            <form onSubmit={handleSavePanicForm} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ background: '#fef7e0', padding: '10px 14px', borderRadius: '6px', border: '1px solid #fce8e6', fontSize: '12px', color: '#b06000' }}>
+                💡 <strong>Mẹo ngụy trang:</strong> Tùy chỉnh danh sách các câu công việc giả (mỗi dòng 1 câu) khi bấm <strong>ESC</strong> để trùng khớp 100% với ngành nghề thực tế của bạn (IT, Kế toán, HR, Marketing)!
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '12px', alignSelf: 'center', fontWeight: 500, color: '#5f6368' }}>Tải mẫu nhanh:</span>
+                <button type="button" className="btn-secondary" style={{ fontSize: '12px', padding: '4px 8px' }} onClick={() => handleApplyPanicPreset('it_dev')}>
+                  💻 IT / Developer
+                </button>
+                <button type="button" className="btn-secondary" style={{ fontSize: '12px', padding: '4px 8px' }} onClick={() => handleApplyPanicPreset('accounting')}>
+                  📊 Kế Toán / Tài Chính
+                </button>
+                <button type="button" className="btn-secondary" style={{ fontSize: '12px', padding: '4px 8px' }} onClick={() => handleApplyPanicPreset('marketing_hr')}>
+                  📣 Marketing & HR
+                </button>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Danh sách câu log khẩn cấp (Nhập từng câu trên mỗi dòng):</label>
+                <textarea
+                  className="form-textarea"
+                  rows={8}
+                  value={panicInputText}
+                  onChange={e => setPanicInputText(e.target.value)}
+                  placeholder="Nhập danh sách công việc ngụy trang tại đây..."
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button type="submit" className="btn-primary">
+                  <Shield size={15} /> Lưu Cấu Hình Log Vào LocalStorage
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => {
+                    if (onResetAllData) {
+                      onResetAllData();
+                      setPanicInputText(DEFAULT_CORPORATE_FAKES.join('\n'));
+                      setSuccessMsg('Đã khôi phục toàn bộ bảng tính về dữ liệu mặc định!');
+                    }
+                  }}
+                  style={{ color: '#c5221f' }}
+                  title="Khôi phục toàn bộ ô đã sửa về mặc định ban đầu"
+                >
+                  <RotateCcw size={14} /> Khôi Phục Mặc Định
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* TAB 5: Settings & Shortcut Guide */}
           {activeTab === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: '#e8f0fe', padding: '12px', borderRadius: '6px' }}>
                 <h4 style={{ margin: '0 0 8px', color: '#1a73e8' }}>⌨️ Danh sách phím tắt sinh tồn:</h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
-                  <li><strong>Ctrl + Shift + /</strong> (hoặc Cmd + Shift + /): Mở / Đóng bảng điều khiển này bất kỳ lúc nào.</li>
+                  <li><strong>Nhấp double-click ô bất kỳ (hoặc bấm Enter/F2)</strong>: Nhập tay & chỉnh sửa dữ liệu trực tiếp như Excel.</li>
+                  <li><strong>Ctrl + Shift + /</strong> (hoặc Cmd + Shift + /): Mở / Đóng bảng điều khiển này.</li>
                   <li><strong>ESC</strong> hoặc <strong>SPACE</strong>: Kích hoạt <strong>Panic Mode</strong> (Đổi tức thì cột C thành log công việc giả).</li>
+                  <li><strong>Shift + ➡️ (ArrowRight)</strong>: Nhảy sang chương kế tiếp (Next Chapter).</li>
+                  <li><strong>Shift + ⬅️ (ArrowLeft)</strong>: Lùi về chương trước đó (Prev Chapter).</li>
                   <li><strong>Mũi tên ⬇️ ⬆️</strong>: Điều hướng từng câu truyện row-by-row và đồng bộ lên thanh Formula Bar.</li>
                   <li><strong>PageDown / PageUp</strong>: Cuộn nhanh 8 dòng truyện.</li>
                 </ul>
@@ -329,7 +433,7 @@ export default function SecretModal({
         {/* Modal Footer */}
         <div className="modal-footer">
           <span style={{ fontSize: '12px', color: '#70757a' }}>
-            💡 Mẹo: Nhấp vào Icon Google Sheets ở góc trên bên trái bất kỳ lúc nào để mở lại menu này.
+            💡 Mẹo: Dữ liệu chỉnh sửa trực tiếp trên bảng tính sẽ tự động lưu vào <strong>localStorage</strong>.
           </span>
           <button className="btn-secondary" onClick={onClose}>Thoát</button>
         </div>
@@ -337,3 +441,4 @@ export default function SecretModal({
     </div>
   );
 }
+

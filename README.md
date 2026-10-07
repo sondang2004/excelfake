@@ -23,7 +23,13 @@
   Tự động lưu vị trí dòng đang đọc và nội dung truyện vào `localStorage`, không lo mất dấu khi tải lại trang.
 
 ---
+![alt text](image.png) 
+giao diện đọc truyện
 
+![alt text](image-2.png)
+giao diện esc khẩn cấp( có thể sửa lại ở data mẫu)
+![alt text](image-1.png)
+bản điều khiển
 ## 🛠️ Hướng Dẫn Cài Đặt & Chạy Dự Án
 
 ### Yêu cầu hệ thống
@@ -67,10 +73,13 @@ Mở trình duyệt bất kỳ và truy cập địa chỉ: **`http://localhost:
 | --- | --- |
 | **`Ctrl + Shift + /`** *(hoặc `Cmd + Shift + /`)* | Mở / Đóng Bảng điều khiển quản lý truyện bí mật |
 | **`ESC`** hoặc **`SPACE`** | Kích hoạt / Tắt tức thì **Panic Mode** (Tráo truyện thành log giả) |
+| **`Shift + ➡️ (ArrowRight)`** | **Nhảy sang chương kế tiếp (Next Chapter)** |
+| **`Shift + ⬅️ (ArrowLeft)`** | **Lùi về chương trước đó (Prev Chapter)** |
 | **`⬇️ (Phím mũi tên xuống)`** | Nhảy xuống đọc câu tiếp theo (Auto-scroll & Sync Formula Bar) |
 | **`⬆️ (Phím mũi tên lên)`** | Nhảy lên đọc câu trước đó |
 | **`PageDown` / `PageUp`** | Cuộn nhanh 8 dòng truyện |
 | **`Home`** | Trở về dòng đầu tiên |
+
 
 ---
 

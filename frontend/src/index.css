@@ -564,3 +564,113 @@ html, body, #root {
   background-color: #fce8e6;
   color: #c5221f;
 }
+
+/* Chapter Navigation & Toast Styling */
+.chapter-toast-container {
+  position: fixed;
+  top: 12px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.chapter-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: auto;
+  animation: toastSlideIn 0.25s ease-out;
+  max-width: 420px;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chapter-toast.info {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+  border: 1px solid #aecbfa;
+}
+
+.chapter-toast.success {
+  background-color: #e6f4ea;
+  color: #137333;
+  border: 1px solid #a8dab5;
+}
+
+.chapter-toast.error {
+  background-color: #fce8e6;
+  color: #c5221f;
+  border: 1px solid #f5c2c0;
+}
+
+.chap-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chap-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  height: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1a73e8;
+  background-color: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chap-nav-btn:hover:not(:disabled) {
+  background-color: #e8f0fe;
+  border-color: #1a73e8;
+}
+
+.chap-nav-btn:disabled {
+  color: #9aa0a6;
+  background-color: #f1f3f4;
+  border-color: #e0e0e0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.shortcut-tag {
+  font-size: 10px;
+  background-color: #f1f3f4;
+  color: #5f6368;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* Inline cell editor like Excel */
+.cell-inline-input {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #1a73e8 !important;
+  outline: none;
+  font-size: 13px;
+  font-family: inherit;
+  padding: 2px 6px;
+  background: #ffffff;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+  border-radius: 2px;
+}
+
+
