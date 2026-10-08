@@ -356,6 +356,25 @@ app.post('/api/parse-text', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Backend server running on http://localhost:${PORT}`);
-});
+// Serve static frontend build if present (e.g. inside Docker or production deployment)
+const fs = require('fs');
+const path = require('path');
+const frontendDist = path.join(__dirname, '../frontend/dist');
+
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
+
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Boss Key Sheet server running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
+

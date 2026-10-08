@@ -38,7 +38,7 @@ export default function SecretModal({
     if (isOpen) {
       const currentLogs = customPanicLogs && customPanicLogs.length > 0 ? customPanicLogs : DEFAULT_CORPORATE_FAKES;
       setPanicInputText(currentLogs.join('\n'));
-      fetch('http://localhost:5000/api/presets')
+      fetch('/api/presets')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -63,7 +63,7 @@ export default function SecretModal({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/fetch-story', {
+      const res = await fetch('/api/fetch-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +100,7 @@ export default function SecretModal({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('http://localhost:5000/api/parse-text', {
+      const res = await fetch('/api/parse-text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function SecretModal({
     setLoading(true);
     setErrorMsg('');
     try {
-      const res = await fetch(`http://localhost:5000/api/presets/${presetId}`);
+      const res = await fetch(`/api/presets/${presetId}`);
       const data = await res.json();
       if (data.success) {
         onLoadStory(data.title, data.chunks, '');

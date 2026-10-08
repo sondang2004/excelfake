@@ -88,7 +88,7 @@ export default function App() {
     // Default load preset story "Tây Du Ký" if no story active
     const savedData = localStorage.getItem('boss_key_story_data');
     if (!savedData) {
-      fetch('http://localhost:5000/api/presets/tay-du-ky-1')
+      fetch('/api/presets/tay-du-ky-1')
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -172,7 +172,7 @@ export default function App() {
     showToast(`⏳ Đang tải chương ${dirLabel}...`, 'info', 5000);
 
     try {
-      const res = await fetch('http://localhost:5000/api/fetch-story', {
+      const res = await fetch('/api/fetch-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

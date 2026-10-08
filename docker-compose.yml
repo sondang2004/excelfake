@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  boss-key-sheet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: boss_key_sheet_app
+    ports:
+      - "5000:5000"
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
